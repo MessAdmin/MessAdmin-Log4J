@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -29,7 +28,6 @@ import clime.messadmin.admin.BaseAdminActionWithContext;
 import clime.messadmin.i18n.I18NSupport;
 import clime.messadmin.model.Server;
 import clime.messadmin.providers.spi.ApplicationDataProvider;
-import clime.messadmin.utils.Shorts;
 import clime.messadmin.utils.StringUtils;
 
 /**
@@ -53,7 +51,7 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 	private static final String DELETE_LEVEL = "messadmin_no_level";//$NON-NLS-1$
 
 	static {
-		List logLevels = new ArrayList(8);
+		List<Level> logLevels = new ArrayList<Level>(8);
 		logLevels.add(Level.ALL);
 		// TRACE is since Log4J 1.2.12
 		//logLevels.add(Level.TRACE);
@@ -67,7 +65,7 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 		logLevels.add(Level.ERROR);
 		logLevels.add(Level.FATAL);
 		logLevels.add(Level.OFF);
-		LOG_LEVELS = (Level[]) logLevels.toArray(new Level[logLevels.size()]);
+		LOG_LEVELS = logLevels.toArray(new Level[logLevels.size()]);
 	}
 
 	public Log4JAdmin() {
@@ -80,6 +78,7 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 	}
 
 	/** {@inheritDoc} */
+	@Override
 	public void serviceWithContext(HttpServletRequest request, HttpServletResponse response, String context) throws ServletException, IOException {
 		String targetLogger   = request.getParameter(LOGGER_ID);
 		String targetLogLevelStr = request.getParameter(LEVEL_ID);
@@ -99,7 +98,7 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 			return;
 		} // else
 		// get Logger to change Level, and change its Level
-		Logger logger = (Logger) getLoggers().get(targetLogger);
+		Logger logger = getLoggers().get(targetLogger);
 		if (logger != null) {
 			Level targetLogLevel = Level.toLevel(targetLogLevelStr, null);
 			logger.setLevel(targetLogLevel);
@@ -110,12 +109,12 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 	/**
 	 * @return all known Loggers, sorted by name
 	 */
-	protected SortedMap/*<String, Logger>*/ getLoggers() {
-		SortedMap/*<String, Logger>*/ loggersMap = new TreeMap(String.CASE_INSENSITIVE_ORDER);
-		Enumeration loggers = LogManager.getCurrentLoggers();
+	protected SortedMap<String, Logger> getLoggers() {
+		SortedMap<String, Logger> loggersMap = new TreeMap<String, Logger>(String.CASE_INSENSITIVE_ORDER);
+		Enumeration<Logger> loggers = LogManager.getCurrentLoggers();
 		while (loggers.hasMoreElements()) {
 			// eventually filter elements to display here
-			Logger logger = (Logger) loggers.nextElement();
+			Logger logger = loggers.nextElement();
 			loggersMap.put(logger.getName(), logger);
 		}
 		Logger rootLogger = LogManager.getRootLogger();
@@ -130,6 +129,7 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 	/***********************************************************************/
 
 	/** {@inheritDoc} */
+	@Override
 	public int getPriority() {
 		return 4999;
 	}
@@ -145,9 +145,7 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 		StringBuffer xhtml = new StringBuffer(131072);
 		xhtml.append("<table border=\"0\" style=\"font-size: smaller;\">\n");// big table, lots of screen space...
 		xhtml.append("	<tr><th>Logger</th><th>Level</th></tr>\n");
-		Iterator iter = getLoggers().values().iterator();
-		while (iter.hasNext()) {
-			Logger logger = (Logger) iter.next();
+		for (Logger logger : getLoggers().values()) {
 			String urlPrefix = new StringBuffer().append('?').append(ACTION_PARAMETER_NAME).append('=').append(getActionID())
 			.append('&').append(CONTEXT_KEY).append('=').append(urlEncodeUTF8(Server.getInstance().getApplication(context).getApplicationInfo().getInternalContextPath()))
 			.append('&').append(LOGGER_ID).append('=').append(urlEncodeUTF8(logger.getName()))
@@ -162,11 +160,11 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 		xhtml.append("	<tr>");
 		String tdTitle = "";
 		//logger.getAdditivity();
-		Enumeration appenders = logger.getAllAppenders();
+		Enumeration<Appender> appenders = logger.getAllAppenders();
 		short nAppenders = 0;
 		String appendersStr = "";
 		while (appenders.hasMoreElements()) {
-			Appender appender = (Appender) appenders.nextElement();
+			Appender appender = appenders.nextElement();
 			Priority threshold = null;
 			if (appender instanceof AppenderSkeleton) {
 				threshold = ((AppenderSkeleton)appender).getThreshold();
@@ -199,7 +197,7 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 		if (nAppenders > 0) {
 			appendersStr = appendersStr.substring(2); // remove leading ", "
 			xhtml.append(I18NSupport.getLocalizedMessage(BUNDLE_NAME, "logger.appenders",//$NON-NLS-1$
-					new Object[] {Shorts.valueOf(nAppenders), appendersStr})
+					new Object[] {Short.valueOf(nAppenders), appendersStr})
 			);
 		}
 		xhtml.append("</td>");

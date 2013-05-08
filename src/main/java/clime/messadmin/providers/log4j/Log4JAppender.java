@@ -3,6 +3,7 @@
  */
 package clime.messadmin.providers.log4j;
 
+import java.io.Closeable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,7 @@ log4j.appender.MESSADMIN.Threshold=INFO
  * @author C&eacute;drik LIME
  */
 // TODO externalize Log4JAppender.MAX_LOGS_SIZE to configuration?
-public class Log4JAppender extends AppenderSkeleton implements Appender, ApplicationLifeCycleProvider, RequestLifeCycleProvider, RequestExceptionProvider {
+public class Log4JAppender extends AppenderSkeleton implements Appender, ApplicationLifeCycleProvider, RequestLifeCycleProvider, RequestExceptionProvider, Closeable {
 	private static final String APPENDER_NAME = "MessAdmin_Appender";//$NON-NLS-1$
 	private static final String MDC_CONTEXT_KEY = "MessAdmin_Log4J_Appender_Context";//$NON-NLS-1$
 	static final String APP_DATA_KEY = "MessAdmin_Log4J";//$NON-NLS-1$
@@ -87,19 +88,20 @@ public class Log4JAppender extends AppenderSkeleton implements Appender, Applica
 
 	/** {@inheritDoc} */
 	public void contextInitialized(ServletContext servletContext) {
-		Map userData = Server.getInstance().getApplication(servletContext).getUserData();
-		userData.put(APP_DATA_KEY, new LinkedList/*<String>*/());
+		Map<String, List<String>> userData = Server.getInstance().getApplication(servletContext).getUserData();
+		userData.put(APP_DATA_KEY, new LinkedList<String>());
 	}
 	/** {@inheritDoc} */
 	public void contextDestroyed(ServletContext servletContext) {
-		Map userData = Server.getInstance().getApplication(servletContext).getUserData();
-		List/*<String>*/ logs = (List/*<String>*/) userData.get(APP_DATA_KEY);
+		Map<String, List<String>> userData = Server.getInstance().getApplication(servletContext).getUserData();
+		List<String> logs = userData.get(APP_DATA_KEY);
 		logs.clear();
 	}
 
 	/***********************************************************************/
 
 	/** {@inheritDoc} */
+	@Override
 	protected void append(LoggingEvent event) {
 		if (MAX_LOGS_SIZE <= 0) {
 			return;
@@ -133,7 +135,7 @@ public class Log4JAppender extends AppenderSkeleton implements Appender, Applica
 			out.append(loggingEventStr);
 		}
 		// append formatted LogEvent to log-list
-		LinkedList/*<String>*/ logs = (LinkedList/*<String>*/) Server.getInstance().getApplication(context).getUserData().get(APP_DATA_KEY);
+		LinkedList<String> logs = (LinkedList<String>) Server.getInstance().getApplication(context).getUserData().get(APP_DATA_KEY);
 		//assert logs != null;
 		synchronized (logs) {
 			while (logs.size() >= MAX_LOGS_SIZE) {
@@ -144,11 +146,13 @@ public class Log4JAppender extends AppenderSkeleton implements Appender, Applica
 	}
 
 	/** {@inheritDoc} */
+	@Override
 	public boolean requiresLayout() {
 		return true;
 	}
 
 	/** {@inheritDoc} */
+	@Override
 	public void close() {
 		if (this.closed) {
 			return;
