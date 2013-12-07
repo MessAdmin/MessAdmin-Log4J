@@ -51,6 +51,7 @@ public class Log4JDisplayer extends BaseAdminActionWithContext implements Applic
 	/***********************************************************************/
 
 	/** {@inheritDoc} */
+	@Override
 	public int getPriority() {
 		return 5000;
 	}
@@ -67,7 +68,7 @@ public class Log4JDisplayer extends BaseAdminActionWithContext implements Applic
 		ClassLoader cl = application.getApplicationInfo().getClassLoader();
 		long currentItemSize = SizeOfProvider.Util.getObjectSize(data, cl);
 		String result = I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "title",//$NON-NLS-1$
-				new Object[] {bytesFormatter.format(currentItemSize), numberFormatter.format(data.size())});
+				bytesFormatter.format(currentItemSize), numberFormatter.format(data.size()));
 		return result;
 	}
 
@@ -127,6 +128,7 @@ public class Log4JDisplayer extends BaseAdminActionWithContext implements Applic
 	/***********************************************************************/
 
 	/** {@inheritDoc} */
+	@Override
 	public void serviceWithContext(HttpServletRequest request, HttpServletResponse response, String context) throws ServletException, IOException {
 		String maxLogsStr = request.getParameter(MAX_SIZE_ID);
 		if (StringUtils.isBlank(maxLogsStr)) {

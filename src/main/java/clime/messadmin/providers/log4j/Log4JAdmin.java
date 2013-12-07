@@ -136,12 +136,13 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 
 	/** {@inheritDoc} */
 	public String getApplicationDataTitle(ServletContext context) {
-		final ClassLoader cl = Server.getInstance().getApplication(context).getApplicationInfo().getClassLoader();
+		final ClassLoader cl = I18NSupport.getClassLoader(context);
 		return I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "title");//$NON-NLS-1$
 	}
 
 	/** {@inheritDoc} */
 	public String getXHTMLApplicationData(ServletContext context) {
+		final ClassLoader cl = I18NSupport.getClassLoader(context);
 		StringBuffer xhtml = new StringBuffer(131072);
 		xhtml.append("<table border=\"0\" style=\"font-size: smaller;\">\n");// big table, lots of screen space...
 		xhtml.append("	<tr><th>Logger</th><th>Level</th></tr>\n");
@@ -150,13 +151,13 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 			.append('&').append(CONTEXT_KEY).append('=').append(urlEncodeUTF8(Server.getInstance().getApplication(context).getApplicationInfo().getInternalContextPath()))
 			.append('&').append(LOGGER_ID).append('=').append(urlEncodeUTF8(logger.getName()))
 			.append('&').append(LEVEL_ID).append('=').toString();
-			appendLogger(xhtml, logger, urlPrefix);
+			appendLogger(cl, xhtml, logger, urlPrefix);
 		}
 		xhtml.append("</table>\n");
 		return xhtml.toString();
 	}
 
-	protected void appendLogger(StringBuffer xhtml, Logger logger, String urlPrefix) {
+	protected void appendLogger(ClassLoader cl, StringBuffer xhtml, Logger logger, String urlPrefix) {
 		xhtml.append("	<tr>");
 		String tdTitle = "";
 		//logger.getAdditivity();
@@ -177,7 +178,7 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 			++nAppenders;
 		}
 		if (logger.getParent() != null) {
-			tdTitle += I18NSupport.getLocalizedMessage(BUNDLE_NAME, "logger.parent", new Object[] {StringUtils.escapeXml(logger.getParent().getName())});//$NON-NLS-1$
+			tdTitle += I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "logger.parent", StringUtils.escapeXml(logger.getParent().getName()));//$NON-NLS-1$
 		}
 		//logger.getResourceBundle();
 		xhtml.append("<td");
@@ -190,14 +191,14 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 		if (logger.getParent() != null && logger.getParent() != LogManager.getRootLogger()) {
 			// append link to parent logger
 			xhtml.append("<a style=\"font-size: smaller; font-style: normal; font-weight: lighter; margin-left: 0.25em; position: relative; top: -1ex;\" title=\"")
-				.append(I18NSupport.getLocalizedMessage(BUNDLE_NAME, "logger.parent.link.title", new Object[] {StringUtils.escapeXml(logger.getParent().getName())}))
+				.append(I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "logger.parent.link.title", StringUtils.escapeXml(logger.getParent().getName())))
 				.append("\" href=\"#").append(StringUtils.escapeXml(logger.getParent().getName())).append("\">&uarr;</a>");
 		}
 		// append appenders names
 		if (nAppenders > 0) {
 			appendersStr = appendersStr.substring(2); // remove leading ", "
-			xhtml.append(I18NSupport.getLocalizedMessage(BUNDLE_NAME, "logger.appenders",//$NON-NLS-1$
-					new Object[] {Short.valueOf(nAppenders), appendersStr})
+			xhtml.append(I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "logger.appenders",//$NON-NLS-1$
+					Short.valueOf(nAppenders), appendersStr)
 			);
 		}
 		xhtml.append("</td>");
@@ -225,7 +226,7 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 			xhtml.append("&nbsp;");
 			String url = StringUtils.escapeXml(urlPrefix+DELETE_LEVEL);
 			xhtml.append('[')
-				.append(buildActionLink(url, I18NSupport.getLocalizedMessage(BUNDLE_NAME, "action.delete"), this))////$NON-NLS-1$
+				.append(buildActionLink(url, I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "action.delete"), this))////$NON-NLS-1$
 				.append(']');
 		}
 		xhtml.append("</td></tr>\n");
