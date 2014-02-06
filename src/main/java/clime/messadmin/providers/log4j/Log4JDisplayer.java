@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -63,8 +62,8 @@ public class Log4JDisplayer extends BaseAdminActionWithContext implements Applic
 		NumberFormat numberFormatter = NumberFormat.getNumberInstance(I18NSupport.getAdminLocale());
 		NumberFormat bytesFormatter = BytesFormat.getBytesInstance(I18NSupport.getAdminLocale(), true);
 		Application application = Server.getInstance().getApplication(context);
-		List/*<String>*/ logs = (List/*<String>*/) application.getUserData().get(Log4JAppender.APP_DATA_KEY);
-		List/*<String>*/ data = new ArrayList/*<String>*/(logs);
+		List<String> logs = (List<String>) application.getUserData().get(Log4JAppender.APP_DATA_KEY);
+		List<String> data = new ArrayList<String>(logs);
 		ClassLoader cl = application.getApplicationInfo().getClassLoader();
 		long currentItemSize = SizeOfProvider.Util.getObjectSize(data, cl);
 		String result = I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "title",//$NON-NLS-1$
@@ -76,8 +75,8 @@ public class Log4JDisplayer extends BaseAdminActionWithContext implements Applic
 	public String getXHTMLApplicationData(ServletContext context) {
 		Application application = Server.getInstance().getApplication(context);
 		ClassLoader cl = application.getApplicationInfo().getClassLoader();
-		List/*<String>*/ logs = (List/*<String>*/) application.getUserData().get(Log4JAppender.APP_DATA_KEY);
-		logs = new ArrayList/*<String>*/(logs);
+		List<String> logs = (List<String>) application.getUserData().get(Log4JAppender.APP_DATA_KEY);
+		logs = new ArrayList<String>(logs);
 		final StringBuffer out = new StringBuffer(256*(logs.size()+1));
 		String urlPrefix = new StringBuffer().append('?').append(ACTION_PARAMETER_NAME).append('=').append(getActionID())
 			.append('&').append(CONTEXT_KEY).append('=').append(urlEncodeUTF8(Server.getInstance().getApplication(context).getApplicationInfo().getInternalContextPath()))
@@ -105,10 +104,8 @@ public class Log4JDisplayer extends BaseAdminActionWithContext implements Applic
 
 		out.append("<hr/>");
 
-		Iterator/*<String>*/ iter = logs.iterator();
 		out.append("<ul>\n");
-		while (iter.hasNext()) {
-			String loggingEventStr = (String) iter.next();
+		for (String loggingEventStr : logs) {
 			out.append("<li>").append(loggingEventStr).append("</li>\n");
 		}
 		out.append("</ul>\n");
@@ -154,8 +151,8 @@ public class Log4JDisplayer extends BaseAdminActionWithContext implements Applic
 		}
 		Log4JAppender.MAX_LOGS_SIZE = Math.max(0, maxLogs);
 		Application application = Server.getInstance().getApplication(context);
-		LinkedList/*<String>*/ logs = (LinkedList/*<String>*/) application.getUserData().get(Log4JAppender.APP_DATA_KEY);
-		//assert logs != null;
+		LinkedList<String> logs = (LinkedList<String>) application.getUserData().get(Log4JAppender.APP_DATA_KEY);
+		assert logs != null;
 		synchronized (logs) {
 			while (logs.size() > Log4JAppender.MAX_LOGS_SIZE) {
 				logs.removeFirst();

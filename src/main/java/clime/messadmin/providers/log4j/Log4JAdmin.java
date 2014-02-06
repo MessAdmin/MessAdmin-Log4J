@@ -22,6 +22,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
+import org.apache.log4j.spi.Filter;
 
 import clime.messadmin.admin.AdminActionProvider;
 import clime.messadmin.admin.BaseAdminActionWithContext;
@@ -145,12 +146,12 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 		final ClassLoader cl = I18NSupport.getClassLoader(context);
 		StringBuffer xhtml = new StringBuffer(131072);
 		xhtml.append("<table border=\"0\" style=\"font-size: smaller;\">\n");// big table, lots of screen space...
+		String urlPrePrefix = "?" + ACTION_PARAMETER_NAME + '=' + getActionID()
+				+ '&' + CONTEXT_KEY + '=' + urlEncodeUTF8(Server.getInstance().getApplication(context).getApplicationInfo().getInternalContextPath())
+				+ '&' + LOGGER_ID + '=';
 		xhtml.append("	<tr><th>Logger</th><th>Level</th></tr>\n");
 		for (Logger logger : getLoggers().values()) {
-			String urlPrefix = new StringBuffer().append('?').append(ACTION_PARAMETER_NAME).append('=').append(getActionID())
-			.append('&').append(CONTEXT_KEY).append('=').append(urlEncodeUTF8(Server.getInstance().getApplication(context).getApplicationInfo().getInternalContextPath()))
-			.append('&').append(LOGGER_ID).append('=').append(urlEncodeUTF8(logger.getName()))
-			.append('&').append(LEVEL_ID).append('=').toString();
+			String urlPrefix = urlPrePrefix + urlEncodeUTF8(logger.getName()) + '&' + LEVEL_ID + '=';
 			appendLogger(cl, xhtml, logger, urlPrefix);
 		}
 		xhtml.append("</table>\n");
@@ -160,23 +161,37 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 	protected void appendLogger(ClassLoader cl, StringBuffer xhtml, Logger logger, String urlPrefix) {
 		xhtml.append("	<tr>");
 		String tdTitle = "";
-		//logger.getAdditivity();
+//		boolean additive = logger.getAdditivity();// true by default
 		Enumeration<Appender> appenders = logger.getAllAppenders();
 		short nAppenders = 0;
-		String appendersStr = "";
+		StringBuilder appendersStr = new StringBuilder(64);
 		while (appenders.hasMoreElements()) {
 			Appender appender = appenders.nextElement();
 			Priority threshold = null;
 			if (appender instanceof AppenderSkeleton) {
 				threshold = ((AppenderSkeleton)appender).getThreshold();
 			}
-			appendersStr += ", <code title=\""+appender.getClass().getName()+"\">" + StringUtils.escapeXml(appender.getName());
-			if (threshold != null) {
-				appendersStr += " [" + threshold.toString() + ']';
+			short nFilters = 0;
+			StringBuilder filtersStr = new StringBuilder();
+			{
+				Filter filter = appender.getFilter();
+				while (filter != null) {
+					++nFilters;
+					filtersStr.append(", <code title=\"").append(filter.getClass().getName()).append("\">").append(filter.getClass().getSimpleName()).append("</code>");
+					filter = filter.getNext();
+				}
 			}
-			appendersStr += "</code>";
+			appendersStr.append(", <code title=\"").append(appender.getClass().getName()).append("\">").append(StringUtils.escapeXml(appender.getName())).append("</code>");
+			if (threshold != null) {
+				appendersStr.append(" [").append(threshold.toString()).append(']');
+			}
+			if (nFilters > 0) {
+				// append filters names
+				appendersStr.append(I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "appender.filters", Short.valueOf(nFilters), filtersStr.substring(2))); // remove leading ", "//$NON-NLS-1$
+			}
 			++nAppenders;
 		}
+
 		if (logger.getParent() != null) {
 			tdTitle += I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "logger.parent", StringUtils.escapeXml(logger.getParent().getName()));//$NON-NLS-1$
 		}
@@ -196,9 +211,8 @@ public class Log4JAdmin extends BaseAdminActionWithContext implements Applicatio
 		}
 		// append appenders names
 		if (nAppenders > 0) {
-			appendersStr = appendersStr.substring(2); // remove leading ", "
 			xhtml.append(I18NSupport.getLocalizedMessage(BUNDLE_NAME, cl, "logger.appenders",//$NON-NLS-1$
-					Short.valueOf(nAppenders), appendersStr)
+					Short.valueOf(nAppenders), appendersStr.substring(2)) // remove leading ", "
 			);
 		}
 		xhtml.append("</td>");
